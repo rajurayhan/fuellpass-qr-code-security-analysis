@@ -3,7 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Code Security in Fuellpass</title>
+<title>QR Code Security in Fuellpass — Vulnerabilities, Risks & a Better Design</title>
+
+<!-- Primary Meta -->
+<meta name="description" content="A deep dive into how Fuellpass encodes user identity in QR tokens, where the current design falls short, and how a layered online/offline architecture can close the real-world attack surface.">
+<meta name="author" content="Raju Rayhan">
+<meta name="keywords" content="Fuellpass, QR code security, HMAC, replay attack, Bangladesh, fuel pass, token security, cybersecurity">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Raju Rayhan">
+<meta property="og:title" content="QR Code Security in Fuellpass — Vulnerabilities, Risks & a Better Design">
+<meta property="og:description" content="A deep dive into how Fuellpass encodes user identity in QR tokens, where the current design falls short, and how a layered online/offline architecture can close the real-world attack surface.">
+<meta property="og:url" content="https://rajurayhan.github.io/fuellpass-qr-code-security-analysis/">
+<meta property="og:image" content="https://rajurayhan.github.io/fuellpass-qr-code-security-analysis/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="en_US">
+
+<!-- Article specific OG -->
+<meta property="article:author" content="Raju Rayhan">
+<meta property="article:published_time" content="2026-04-10">
+<meta property="article:tag" content="Security">
+<meta property="article:tag" content="QR Code">
+<meta property="article:tag" content="Bangladesh">
+<meta property="article:tag" content="Fuellpass">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="QR Code Security in Fuellpass — Vulnerabilities, Risks & a Better Design">
+<meta name="twitter:description" content="A deep dive into how Fuellpass encodes user identity in QR tokens, where the current design falls short, and how a layered online/offline architecture can close the real-world attack surface.">
+<meta name="twitter:image" content="https://rajurayhan.github.io/fuellpass-qr-code-security-analysis/og-image.png">
+<meta name="twitter:creator" content="@rajurayhan">
+
+<!-- Canonical -->
+<link rel="canonical" href="https://rajurayhan.github.io/fuellpass-qr-code-security-analysis/">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
