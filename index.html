@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code Security in Fuellpass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e4dc;
+    --text2: #8a8680;
+    --text3: #5a5755;
+    --accent: #c8a96e;
+    --accent2: #e8c99e;
+    --red: #d45c5c;
+    --green: #5c9e7a;
+    --amber: #c8944a;
+    --blue: #5c8db8;
+    --red-bg: rgba(212,92,92,0.1);
+    --green-bg: rgba(92,158,122,0.1);
+    --amber-bg: rgba(200,148,74,0.1);
+    --blue-bg: rgba(92,141,184,0.1);
+    --font-display: 'DM Serif Display', serif;
+    --font-body: 'Instrument Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.75;
+    min-height: 100vh;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+  }
+
+  /* Header */
+  .masthead {
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 0 1.5rem;
+    margin-bottom: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .masthead-brand {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .masthead-date {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  /* Hero */
+  .hero {
+    margin-bottom: 4rem;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s ease forwards;
+  }
+  .hero-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .hero-tag::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.01em;
+  }
+  h1 em {
+    color: var(--accent);
+    font-style: italic;
+  }
+  .hero-lead {
+    font-size: 17px;
+    color: var(--text2);
+    max-width: 620px;
+    line-height: 1.8;
+    border-left: 2px solid var(--accent);
+    padding-left: 1.25rem;
+  }
+
+  /* Section headings */
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    font-weight: 400;
+    color: var(--text);
+    margin: 3.5rem 0 1rem;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 2rem 0 0.75rem;
+  }
+  p { color: var(--text2); margin-bottom: 1rem; }
+  p strong { color: var(--text); font-weight: 600; }
+
+  /* Section */
+  .section {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeUp 0.7s ease forwards;
+  }
+  .section:nth-child(2) { animation-delay: 0.1s; }
+  .section:nth-child(3) { animation-delay: 0.2s; }
+  .section:nth-child(4) { animation-delay: 0.3s; }
+  .section:nth-child(5) { animation-delay: 0.4s; }
+  .section:nth-child(6) { animation-delay: 0.5s; }
+
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+    position: relative;
+  }
+  .divider::after {
+    content: attr(data-num);
+    position: absolute;
+    top: -10px;
+    left: 0;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    background: var(--bg);
+    padding-right: 10px;
+  }
+
+  /* Code */
+  pre {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    margin: 1.25rem 0;
+    line-height: 1.7;
+    color: var(--accent2);
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    border-radius: 3px;
+    color: var(--accent2);
+  }
+
+  /* Callouts */
+  .callout {
+    border-radius: 6px;
+    border: 1px solid;
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+  }
+  .callout-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-family: var(--font-mono);
+  }
+  .callout p { margin: 0; font-size: 14px; }
+  .callout.danger { background: var(--red-bg); border-color: rgba(212,92,92,0.25); }
+  .callout.danger .callout-title { color: var(--red); }
+  .callout.success { background: var(--green-bg); border-color: rgba(92,158,122,0.25); }
+  .callout.success .callout-title { color: var(--green); }
+  .callout.warning { background: var(--amber-bg); border-color: rgba(200,148,74,0.25); }
+  .callout.warning .callout-title { color: var(--amber); }
+  .callout.info { background: var(--blue-bg); border-color: rgba(92,141,184,0.25); }
+  .callout.info .callout-title { color: var(--blue); }
+
+  /* Flow */
+  .flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 1.25rem 0;
+  }
+  .flow-step {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .flow-arrow { color: var(--text3); font-size: 14px; }
+
+  /* Cards grid */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1.25rem 0; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 1.25rem 0; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+  }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .card p { font-size: 13px; color: var(--text2); margin: 0; line-height: 1.6; }
+  .badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+  }
+  .badge.risk { background: var(--red-bg); color: var(--red); border: 1px solid rgba(212,92,92,0.2); }
+  .badge.warn { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(200,148,74,0.2); }
+  .badge.safe { background: var(--green-bg); color: var(--green); border: 1px solid rgba(92,158,122,0.2); }
+
+  /* Scenario block */
+  .scenario {
+    background: var(--surface);
+    border-left: 3px solid var(--red);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text2);
+  }
+  .scenario strong { color: var(--text); font-weight: 600; display: block; margin-bottom: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
+
+  /* Table */
+  .table-wrap { margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--surface2);
+    padding: 10px 14px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text); font-weight: 500; }
+
+  /* Mode cards */
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 1.5rem 0; }
+  .mode-card { border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+  .mode-header { padding: 10px 14px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+  .mode-card.online .mode-header { background: var(--green-bg); color: var(--green); border-bottom: 1px solid rgba(92,158,122,0.15); }
+  .mode-card.offline .mode-header { background: var(--amber-bg); color: var(--amber); border-bottom: 1px solid rgba(200,148,74,0.15); }
+  .mode-body { padding: 12px 14px; background: var(--surface); }
+  .mode-body p { font-size: 13px; color: var(--text2); margin-bottom: 5px; line-height: 1.6; padding-left: 14px; position: relative; }
+  .mode-body p::before { content: '—'; position: absolute; left: 0; color: var(--text3); }
+  .mode-body p:last-child { margin-bottom: 0; }
+
+  /* Fix list */
+  .fix-list { margin: 1.5rem 0; }
+  .fix-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .fix-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .fix-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .fix-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .fix-desc { font-size: 14px; color: var(--text2); line-height: 1.65; }
+
+  /* Footer */
+  .footer {
+    margin-top: 5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.8;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .grid2, .grid3, .mode-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 2rem; }
+    .masthead { flex-direction: column; gap: 6px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <div class="masthead-brand">Security Analysis / Fuellpass QR</div>
+    <div class="masthead-date">April 2026 — Bangladesh</div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-tag">Critical infrastructure security</div>
+    <h1>QR code security in<br><em>Fuellpass</em></h1>
+    <p class="hero-lead">A deep dive into how Fuellpass encodes user identity in QR tokens, where the current design falls short, and how a layered online/offline architecture can close the real-world attack surface.</p>
+  </div>
+
+  <hr class="divider" data-num="01">
+
+  <div class="section">
+    <h2>What the QR actually contains</h2>
+    <p>Scanning a Fuellpass QR yields a two-part dot-separated string. The first part is a Base64-encoded JSON payload. The second is a cryptographic signature.</p>
+
+<pre>{
+  "uid": 37626,
+  "phone": "01849699001",
+  "iat":   1775802947,
+  "created_at": 1775802947
+}</pre>
+
+    <p>The signature — a 64-character hex string — is computed with HMAC-SHA256. The payload is <strong>readable by anyone</strong> but supposedly <strong>tamper-proof</strong> without the server's secret key.</p>
+
+    <div class="callout info">
+      <div class="callout-title">How HMAC-SHA256 signing works</div>
+      <p>The server computes <code>HMAC_SHA256(secret_key, payload)</code> and appends it. A verifier recomputes the same hash — if it matches, the token is genuine. Any change to the payload breaks the hash.</p>
+    </div>
+  </div>
+
+  <hr class="divider" data-num="02">
+
+  <div class="section">
+    <h2>The obvious attack: payload spoofing</h2>
+    <p>A naive attacker might modify the payload, re-encode it, and reuse the original signature. Here's what that looks like.</p>
+
+    <div class="flow">
+      <div class="flow-step">decode payload</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">modify uid / phone</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">re-encode base64</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">keep old signature</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">new QR</div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-title">This attack fails — if implemented correctly</div>
+      <p>HMAC-SHA256 is computed against the original payload. A tampered payload produces a different hash. The scanner rejects it. Cryptographically sound.</p>
+    </div>
+
+    <p>But that "if" matters. Common implementation mistakes can render the signing useless.</p>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="badge risk">Critical</div>
+        <div class="card-title">Signature never verified</div>
+        <p>Token is generated with a signature but the scanner reads the payload blindly without checking it.</p>
+      </div>
+      <div class="card">
+        <div class="badge risk">Critical</div>
+        <div class="card-title">Weak or hardcoded secret</div>
+        <p>A guessable key like <code>secret123</code> lets an attacker brute-force and re-sign any payload they want.</p>
+      </div>
+      <div class="card">
+        <div class="badge warn">High</div>
+        <div class="card-title">Algorithm confusion</div>
+        <p>If the system accepts <code>"alg": "none"</code>, the signature can be stripped entirely — a classic JWT flaw.</p>
+      </div>
+      <div class="card">
+        <div class="badge warn">High</div>
+        <div class="card-title">No expiry enforced</div>
+        <p><code>iat</code> is logged but never checked against an expiry window. A token remains valid forever.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" data-num="03">
+
+  <div class="section">
+    <h2>The real threat: replay attacks</h2>
+    <p>Payload spoofing requires breaking cryptography. A replay attack requires only a camera. The attacker doesn't forge anything — they simply reuse a valid QR they photographed.</p>
+
+    <div class="scenario">
+      <strong>Scenario — Dhaka CNG station, peak hour</strong>
+      You open Fuellpass and show your QR to the attendant. Someone behind you in the queue casually films your phone screen. Ten minutes later, at a different pump, they scan your QR. Fuel is dispensed from your quota. You find out only when your monthly allocation runs out — with no explanation, no alert, no recourse.
+    </div>
+
+    <p>This is possible because the current token design has structural weaknesses that make replaying a captured QR trivially easy.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Weakness</th><th>Evidence in token</th><th>Impact</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>No expiry field</td>
+            <td><code>iat</code> present, no <code>exp</code></td>
+            <td>QR valid indefinitely after generation</td>
+          </tr>
+          <tr>
+            <td>Static generation</td>
+            <td><code>iat</code> and <code>created_at</code> are identical</td>
+            <td>Token likely generated once, not per-session</td>
+          </tr>
+          <tr>
+            <td>No nonce</td>
+            <td>No one-time random value in payload</td>
+            <td>Same QR can be scanned multiple times</td>
+          </tr>
+          <tr>
+            <td>No transaction ID</td>
+            <td>Token not tied to a specific fuel request</td>
+            <td>Any captured QR is a reusable credential</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-title">Bottom line</div>
+      <p>The HMAC signature is cryptographically sound. But a valid signature on a static, long-lived token is not meaningful security. A photograph of your QR is as good as your physical presence at any pump — potentially forever.</p>
+    </div>
+  </div>
+
+  <hr class="divider" data-num="04">
+
+  <div class="section">
+    <h2>A better design: layered online/offline tokens</h2>
+    <p>The natural fix is a per-transaction QR — generated fresh on the server for every fuel request, single-use, expiring in 60 seconds. This is how bKash, Nagad, and Google Pay handle it. It closes the replay attack completely.</p>
+    <p>But Bangladesh has a real connectivity problem. Rural areas, congested networks, and server downtime mean you cannot require internet at the moment of dispensing. A purely online system fails users when they need it most.</p>
+    <p>The solution is a two-mode architecture.</p>
+
+    <div class="mode-grid">
+      <div class="mode-card online">
+        <div class="mode-header">Online mode — per-transaction QR</div>
+        <div class="mode-body">
+          <p>User requests fuel in app</p>
+          <p>Server generates single-use QR</p>
+          <p>QR expires in 60 seconds</p>
+          <p>Server marks nonce as used on scan</p>
+          <p>Duplicate scan returns error instantly</p>
+        </div>
+      </div>
+      <div class="mode-card offline">
+        <div class="mode-header">Offline mode — backup token</div>
+        <div class="mode-body">
+          <p>Pre-generated when user last had internet</p>
+          <p>Two time-sliced single-use tokens</p>
+          <p>Station verifies signature locally</p>
+          <p>Usage synced to server on reconnect</p>
+          <p>Used nonces invalidated on sync</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Offline backup token structure</h3>
+    <p>Instead of a use-counter (which can be manipulated on a rooted device), the server pre-generates two tokens covering different time windows.</p>
+
+<pre>{
+  "uid": 37626,
+  "phone": "01849699001",
+  "type": "backup",
+  "issued_at": 1775802947,
+  "exp":  1775889347,       // valid 24 hours total
+  "window": "0-12h",        // only active in first half
+  "nonce": "x9f2a1c8e3b74d05"
+}</pre>
+
+    <p>Only one token is mathematically active at any moment. Even if a hacker photographs both simultaneously, they can only exploit one 12-hour window — and your server can flag duplicate nonce attempts when the device reconnects.</p>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="badge risk">Risky</div>
+        <div class="card-title">Device-side counter</div>
+        <p>App tracks <code>uses_remaining = 2</code> locally. Fails if the app is tampered with or device is rooted. Counter can simply be reset.</p>
+      </div>
+      <div class="card">
+        <div class="badge safe">Better</div>
+        <div class="card-title">Time-sliced tokens</div>
+        <p>No counter to manipulate. Only one token is valid at any given time. Damage window is bounded to 12 hours maximum.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" data-num="05">
+
+  <div class="section">
+    <h2>Recommended safeguards</h2>
+
+    <div class="fix-list">
+      <div class="fix-row">
+        <div class="fix-num">1</div>
+        <div>
+          <div class="fix-title">Dynamic QR with short expiry</div>
+          <div class="fix-desc">Online QR should expire in 30–60 seconds. Add an <code>exp</code> field and enforce it strictly at the scanner. If the token is older than the window, reject unconditionally.</div>
+        </div>
+      </div>
+      <div class="fix-row">
+        <div class="fix-num">2</div>
+        <div>
+          <div class="fix-title">One-time nonce</div>
+          <div class="fix-desc">Every token carries a cryptographically random nonce. The server marks it used on first scan. A second scan of the same nonce is rejected with an error — no matter how valid the signature is.</div>
+        </div>
+      </div>
+      <div class="fix-row">
+        <div class="fix-num">3</div>
+        <div>
+          <div class="fix-title">Biometric gate on backup QR</div>
+          <div class="fix-desc">The offline backup QR should sit behind fingerprint or PIN in the app. Prevents casual misuse if the phone is stolen or borrowed.</div>
+        </div>
+      </div>
+      <div class="fix-row">
+        <div class="fix-num">4</div>
+        <div>
+          <div class="fix-title">Instant SMS notification on every scan</div>
+          <div class="fix-desc">Every QR scan — online or offline — triggers an SMS to the registered mobile number. Users catch unauthorized use in real time, even without a data connection.</div>
+        </div>
+      </div>
+      <div class="fix-row">
+        <div class="fix-num">5</div>
+        <div>
+          <div class="fix-title">Server reconciliation on reconnect</div>
+          <div class="fix-desc">When the user's device reconnects, the app syncs offline scan events. The server checks for duplicate nonces across all stations and flags anomalies for investigation.</div>
+        </div>
+      </div>
+      <div class="fix-row">
+        <div class="fix-num">6</div>
+        <div>
+          <div class="fix-title">Station geo-log</div>
+          <div class="fix-desc">Offline scans should record station GPS coordinates locally and sync them on reconnect. If the same token appears at two geographically distant stations, it is flagged automatically.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" data-num="06">
+
+  <div class="section">
+    <h2>Summary</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Mode</th><th>QR type</th><th>Uses</th><th>Validity</th><th>Verification</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Online</td>
+            <td>Per-transaction</td>
+            <td>1</td>
+            <td>60 seconds</td>
+            <td>Server-side, real-time</td>
+          </tr>
+          <tr>
+            <td>Offline — window 1</td>
+            <td>Backup token A</td>
+            <td>1</td>
+            <td>0–12 hours</td>
+            <td>Local signature check</td>
+          </tr>
+          <tr>
+            <td>Offline — window 2</td>
+            <td>Backup token B</td>
+            <td>1</td>
+            <td>12–24 hours</td>
+            <td>Local signature check</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-title">Key takeaway</div>
+      <p>The HMAC-SHA256 signing on Fuellpass tokens is a solid foundation. But a valid signature on a static, long-lived token is not enough. Short expiry, one-time nonces, time-sliced offline tokens, and real-time SMS alerts together close the replay attack surface — without breaking the offline usability Bangladeshi users genuinely need.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>This analysis is based on a QR token captured in the field. Internal implementation details of Fuellpass's backend are not known to the author. Any identified vulnerabilities should be reported responsibly to the Fuellpass security team before public disclosure.</p>
+    <p style="margin-top:8px; color: var(--text3);">Security Analysis — April 2026</p>
+  </div>
+
+</div>
+</body>
+</html>
